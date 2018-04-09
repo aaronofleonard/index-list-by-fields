@@ -133,10 +133,7 @@ describe('indexListByFields', () => {
 });
 
 describe('memoizeIndexedArray', () => {
-  const indexer = memoizeIndexedArray(indexListByFields('authorId', 'publisherId', 'subjectId', [
-    'publisherId',
-    'subjectId',
-  ]));
+  const indexer = memoizeIndexedArray(indexListByFields('authorId', 'publisherId', 'subjectId'));
 
   test('it produces the expected result', () => {
     const itemsIndexedBy = indexer(items);
