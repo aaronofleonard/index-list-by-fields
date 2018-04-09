@@ -17,6 +17,10 @@
   ],
   "author": "Aaron Leonard",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aaronofleonard/index-list-by-fields.git"
+  },
   "devDependencies": {
     "@types/jest": "^22.2.2",
     "jest": "^22.4.3",
