@@ -48,34 +48,63 @@ function indexIntoObject<M>(
   }
 }
 
-export const indexListByFields = (...fields: Array<string | string[]>) => <
-  M extends object
->(
-  list: Array<M>
-): IndexedState<M> => {
-  // preinitialize all fields
-  let indexedBaseObj: IndexedState<M> = fields.reduce((obj: object, field) => {
-    if (typeof field === 'string') {
-      obj[field] = {};
-    } else if (Array.isArray(field)) {
-      obj[field.join('')] = {};
-    }
-    return obj;
-  }, {});
+export const indexListByFields = (...fields: Array<string | string[]>) => {
+  let lastIndex;
 
-  for (let i = 0, len = list.length; i < len; i++) {
-    let item = list[i];
+  return <M extends object>(list: Array<M>): IndexedState<M> => {
+    // preinitialize all fields
+    let indexedBaseObj: IndexedState<M> = fields.reduce((obj: object, field) => {
+      if (typeof field === "string") {
+        obj[field] = {};
+      } else if (Array.isArray(field)) {
+        obj[field.join("")] = {};
+      }
+      return obj;
+    }, {});
 
     for (let j = 0, subLen = fields.length; j < subLen; j++) {
       let field = fields[j];
+      
+      let innerChanged = {};
+      const key = Array.isArray(field) ? field.join("") : field;
 
-      const key = Array.isArray(field) ? field.join('') : field;
+      for (let i = 0, len = list.length; i < len; i++) {
+        let item: M = list[i];
 
-      indexIntoObject(indexedBaseObj[key], item, field);
+        indexIntoObject(indexedBaseObj[key], item, field);
+
+        if (typeof field === 'string') {
+          const value = item[field];
+
+          if (lastIndex) {
+            if (lastIndex[key] && lastIndex[key][value]) {
+              const lastArrayindex = (indexedBaseObj[key][value] as M[]).length - 1;
+              if (indexedBaseObj[key][value][lastArrayindex] !== lastIndex[key][value][lastArrayindex]) {
+                innerChanged[value] = true;
+              }
+            }
+            else {
+              innerChanged[value] = true;
+            }
+          }
+        }
+      }
+
+      // console.log("Field: " + field + " Changed: " + Object.keys(innerChanged).join(",") + " Keys: " + Object.keys(indexedBaseObj[key]));
+
+      if (lastIndex) {
+        const values = Object.keys(indexedBaseObj[key]);
+        values.forEach(valueKey => {
+          if (!innerChanged.hasOwnProperty(valueKey) && indexedBaseObj[key][valueKey].length === lastIndex[key][valueKey].length) {
+            indexedBaseObj[key][valueKey] = lastIndex[key][valueKey];
+          }
+        });
+      }
     }
-  }
+    lastIndex = indexedBaseObj;
 
-  return indexedBaseObj;
+    return indexedBaseObj;
+  }
 };
 
 function isArrayEqual<T>(a: Array<T>, b: Array<T>) {
@@ -114,7 +143,10 @@ export const memoizeIndexedArray = <M>(fn: IndexedMemoizableFunction<M>) => {
           let nextValueIndexedList = Object.keys(nextResult[field]).reduce(
             (acc, value) => {
               if (
-                isArrayEqual(lastResult[field][value] as Array<M>, nextResult[field][value] as Array<M>)
+                isArrayEqual(
+                  lastResult[field][value] as Array<M>,
+                  nextResult[field][value] as Array<M>
+                )
               ) {
                 acc[value] = lastResult[field][value];
               } else {
