@@ -95,7 +95,7 @@ export const indexListByFields = (...fields: Array<string | string[]>) => {
       if (lastIndex) {
         const values = Object.keys(indexedBaseObj[key]);
         values.forEach(valueKey => {
-          if (!innerChanged.hasOwnProperty(valueKey) && indexedBaseObj[key][valueKey].length === lastIndex[key][valueKey].length) {
+          if (!innerChanged.hasOwnProperty(valueKey) && (indexedBaseObj[key][valueKey] as M[]).length === lastIndex[key][valueKey].length) {
             indexedBaseObj[key][valueKey] = lastIndex[key][valueKey];
           }
         });
