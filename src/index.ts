@@ -23,9 +23,13 @@ function ensureKeyOnObject<M>(
 function indexIntoObject<M>(
   baseObject: IndexedField<M> | IndexedState<M>,
   item: M,
-  field: string | Array<string>
-): IndexedField<M> {
-  let value: any, nextFields: Array<string>, currentField: string;
+  field: string | Array<string>,
+  lastBaseObject?: IndexedField<M> | IndexedState<M>
+): boolean {
+  let value: any,
+    nextFields: Array<string>,
+    currentField: string,
+    changes = false;
 
   if (Array.isArray(field)) {
     [currentField, ...nextFields] = field;
@@ -41,138 +45,91 @@ function indexIntoObject<M>(
 
   if (Array.isArray(nextFields) && nextFields.length) {
     ensureKeyOnObject(baseObject, value, {});
-    indexIntoObject(baseObject[value] as IndexedField<M>, item, nextFields);
+    changes = indexIntoObject(
+      baseObject[value] as IndexedField<M>,
+      item,
+      nextFields,
+      lastBaseObject ? (lastBaseObject[value] as IndexedField<M>) || null : null
+    );
   } else {
     ensureKeyOnObject(baseObject, value, []);
-    (baseObject[value] as Array<M>).push(item);
+    const insertionPoint = baseObject[value] as Array<M>;
+    if (
+      !lastBaseObject ||
+      !lastBaseObject[value] ||
+      lastBaseObject[value][insertionPoint.length] != item
+    ) {
+      changes = true;
+    }
+
+    insertionPoint.push(item);
   }
+
+  return changes;
 }
 
 export const indexListByFields = (...fields: Array<string | string[]>) => {
-  let lastIndex;
+  let lastIndexedObj;
+  const config = {
+    memoize: true,
+  };
 
-  return <M extends object>(list: Array<M>): IndexedState<M> => {
+  const indexer = <M extends object>(list: Array<M>): IndexedState<M> => {
     // preinitialize all fields
-    let indexedBaseObj: IndexedState<M> = fields.reduce((obj: object, field) => {
-      if (typeof field === "string") {
-        obj[field] = {};
-      } else if (Array.isArray(field)) {
-        obj[field.join("")] = {};
-      }
-      return obj;
-    }, {});
+    let indexedBaseObj: IndexedState<M> = fields.reduce(
+      (obj: object, field) => {
+        if (typeof field === 'string') {
+          obj[field] = {};
+        } else if (Array.isArray(field)) {
+          obj[field.join('')] = {};
+        }
+        return obj;
+      },
+      {}
+    );
 
     for (let j = 0, subLen = fields.length; j < subLen; j++) {
       let field = fields[j];
-      
+
       let innerChanged = {};
-      const key = Array.isArray(field) ? field.join("") : field;
+      const key = Array.isArray(field) ? field.join('') : field;
 
       for (let i = 0, len = list.length; i < len; i++) {
         let item: M = list[i];
 
-        indexIntoObject(indexedBaseObj[key], item, field);
+        const itemChange = indexIntoObject(
+          indexedBaseObj[key],
+          item,
+          field,
+          lastIndexedObj ? lastIndexedObj[key] : null
+        );
 
-        if (typeof field === 'string') {
-          const value = item[field];
-
-          if (lastIndex) {
-            if (lastIndex[key] && lastIndex[key][value]) {
-              const lastArrayindex = (indexedBaseObj[key][value] as M[]).length - 1;
-              if (indexedBaseObj[key][value][lastArrayindex] !== lastIndex[key][value][lastArrayindex]) {
-                innerChanged[value] = true;
-              }
-            }
-            else {
-              innerChanged[value] = true;
-            }
+        if (itemChange) {
+          if (typeof field === 'string') {
+            innerChanged[item[field]] = true;
           }
         }
       }
 
-      // console.log("Field: " + field + " Changed: " + Object.keys(innerChanged).join(",") + " Keys: " + Object.keys(indexedBaseObj[key]));
+      if (config.memoize) {
+        if (lastIndexedObj) {
+          const values = Object.keys(indexedBaseObj[key]);
+          values.forEach(valueKey => {
+            if (
+              !innerChanged.hasOwnProperty(valueKey) &&
+              Object.keys(indexedBaseObj[key][valueKey] as M[]).length ===
+                Object.keys(lastIndexedObj[key][valueKey]).length
+            ) {
+              indexedBaseObj[key][valueKey] = lastIndexedObj[key][valueKey];
+            }
+          });
+        }
 
-      if (lastIndex) {
-        const values = Object.keys(indexedBaseObj[key]);
-        values.forEach(valueKey => {
-          if (!innerChanged.hasOwnProperty(valueKey) && (indexedBaseObj[key][valueKey] as M[]).length === lastIndex[key][valueKey].length) {
-            indexedBaseObj[key][valueKey] = lastIndex[key][valueKey];
-          }
-        });
+        lastIndexedObj = indexedBaseObj;
       }
     }
-    lastIndex = indexedBaseObj;
-
     return indexedBaseObj;
-  }
-};
-
-function isArrayEqual<T>(a: Array<T>, b: Array<T>) {
-  // step 1: if one is something and the other is nothing, clearly not the same
-  if ((!a && b) || (a && !b) || !a.length || !b.length) {
-    return false;
-  }
-
-  // step 2: if they are not the same length, clearly not the same
-  if (a.length !== b.length) {
-    return false;
-  }
-
-  // step 3: if they contain different objects at the same index, clearly not the same
-  for (let i = a.length - 1; i >= 0; i--) {
-    if (a[i] !== b[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-export const memoizeIndexedArray = <M>(fn: IndexedMemoizableFunction<M>) => {
-  let lastResult: IndexedState<M>;
-
-  return (...args: Array<any>) => {
-    let nextResult: IndexedState<M> = fn(...args);
-
-    if (lastResult) {
-      let outerChanged = false;
-
-      const nextIndexed: IndexedState<M> = Object.keys(nextResult).reduce(
-        (state, field) => {
-          let innerChanged = false;
-
-          let nextValueIndexedList = Object.keys(nextResult[field]).reduce(
-            (acc, value) => {
-              if (
-                isArrayEqual(
-                  lastResult[field][value] as Array<M>,
-                  nextResult[field][value] as Array<M>
-                )
-              ) {
-                acc[value] = lastResult[field][value];
-              } else {
-                innerChanged = true;
-                acc[value] = nextResult[field][value];
-              }
-
-              return acc;
-            },
-            {}
-          );
-
-          state[field] = innerChanged
-            ? nextValueIndexedList
-            : lastResult[field];
-
-          outerChanged = innerChanged || outerChanged;
-
-          return state;
-        },
-        {}
-      );
-
-      return outerChanged ? (lastResult = nextIndexed) : lastResult;
-    } else {
-      return (lastResult = nextResult);
-    }
   };
+
+  return indexer;
 };

@@ -1,4 +1,4 @@
-import { indexListByFields, memoizeIndexedArray } from '../src';
+import { indexListByFields } from '../src';
 
 const items = [
   {
@@ -132,10 +132,10 @@ describe('indexListByFields', () => {
   });
 });
 
-describe.only('memoizeIndexedArray', () => {
+describe('memoizeIndexedArray', () => {
   const indexer = /*memoizeIndexedArray*/(indexListByFields('authorId', 'publisherId', 'subjectId'));
 
-  test('it produces the expected result', () => {
+  test('it produces the expected result when items added', () => {
     const itemsIndexedBy = indexer(items);
     const itemsIndexedByNext = indexer([...items, newItem]);
 
@@ -148,6 +148,21 @@ describe.only('memoizeIndexedArray', () => {
 
     expect(itemsIndexedBy.subjectId[1]).toBe(itemsIndexedByNext.subjectId[1]);
     expect(itemsIndexedBy.subjectId[3]).not.toBe(itemsIndexedByNext.subjectId[3]);
+  });
+
+  test('it produces the expected result when items change', () => {
+    const itemsIndexedBy = indexer([WAROFTHEWORLDS, THETIMEMACHINE, THESCARLETLETTER, LORDOFTHEFLIES]);
+    const itemsIndexedByNext = indexer([WAROFTHEWORLDS, THEINVISIBLEMAN, THESCARLETLETTER, LORDOFTHEFLIES]);
+
+    expect(itemsIndexedBy.authorId[1]).not.toBe(itemsIndexedByNext.authorId[1]);
+    expect(itemsIndexedBy.authorId[4]).toBe(itemsIndexedByNext.authorId[4]);
+    expect(itemsIndexedBy.authorId[7]).toBe(itemsIndexedByNext.authorId[7]);
+
+    expect(itemsIndexedBy.publisherId[1]).toBe(itemsIndexedByNext.publisherId[1]);
+    expect(itemsIndexedBy.publisherId[2]).not.toBe(itemsIndexedByNext.publisherId[2]);
+
+    expect(itemsIndexedBy.subjectId[1]).not.toBe(itemsIndexedByNext.subjectId[1]);
+    expect(itemsIndexedBy.subjectId[3]).toBe(itemsIndexedByNext.subjectId[3]);
   });
 
   test('dont copy over removed items', () => {
@@ -166,6 +181,24 @@ describe.only('memoizeIndexedArray', () => {
     expect(itemsIndexedByNext.subjectId[3]).not.toBe(itemsIndexedBy.subjectId[3]);
   });
 
+  test.only('memoizes array fields as well', () => {
+    const indexer = indexListByFields([
+      'publisherId',
+      'subjectId',
+    ]);
+
+    const itemsIndexedBy = indexer([WAROFTHEWORLDS, OFMICEANDMEN, LITTLEWOMEN, LORDOFTHEFLIES]);
+    const itemsIndexedByNext = indexer([WAROFTHEWORLDS, OFMICEANDMEN, LITTLEWOMEN, LORDOFTHEFLIES, THEGREATGATSBY]);
+
+    expect(itemsIndexedByNext.publisherIdsubjectId[1]).toBe(itemsIndexedBy.publisherIdsubjectId[1]);
+    expect(itemsIndexedByNext.publisherIdsubjectId[1][1]).toBe(itemsIndexedBy.publisherIdsubjectId[1][1]);
+
+    expect(itemsIndexedByNext.publisherIdsubjectId[3]).not.toBe(itemsIndexedBy.publisherIdsubjectId[3]);
+    expect(itemsIndexedByNext.publisherIdsubjectId[3][2]).not.toBe(itemsIndexedBy.publisherIdsubjectId[3][2]);
+
+    expect(itemsIndexedByNext.publisherIdsubjectId[4]).toBe(itemsIndexedBy.publisherIdsubjectId[4]);
+    expect(itemsIndexedByNext.publisherIdsubjectId[4][3]).toBe(itemsIndexedBy.publisherIdsubjectId[4][3]);
+  });
   /*test('it returns the same state when no changes', () => {
     const itemsIndexedBy = indexer(items);
     const itemsIndexedByNext = indexer(items);
