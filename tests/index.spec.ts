@@ -166,7 +166,7 @@ describe('memoizeIndexedArray', () => {
   });
 
   test('dont copy over removed items', () => {
-    const itemsIndexedBy = indexer(items);
+    const itemsIndexedBy = indexer(items); console.log('--------------');
     const itemsIndexedByNext = indexer(items.filter(item => item !== TOMSAWYER && item !== LITTLEWOMEN && item !== LORDOFTHEFLIES));
 
     expect(itemsIndexedByNext.authorId[1]).toBe(itemsIndexedBy.authorId[1]);
@@ -181,7 +181,7 @@ describe('memoizeIndexedArray', () => {
     expect(itemsIndexedByNext.subjectId[3]).not.toBe(itemsIndexedBy.subjectId[3]);
   });
 
-  test.only('memoizes array fields as well', () => {
+  test('memoizes array fields as well', () => {
     const indexer = indexListByFields([
       'publisherId',
       'subjectId',
@@ -199,6 +199,12 @@ describe('memoizeIndexedArray', () => {
     expect(itemsIndexedByNext.publisherIdsubjectId[4]).toBe(itemsIndexedBy.publisherIdsubjectId[4]);
     expect(itemsIndexedByNext.publisherIdsubjectId[4][3]).toBe(itemsIndexedBy.publisherIdsubjectId[4][3]);
   });
+
+  test('perf', () => {
+    for (let i=0; i<10000; i++) {
+      indexer([...items]);
+    }
+  })
   /*test('it returns the same state when no changes', () => {
     const itemsIndexedBy = indexer(items);
     const itemsIndexedByNext = indexer(items);

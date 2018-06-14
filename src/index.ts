@@ -124,10 +124,11 @@ export const indexListByFields = (...fields: Array<string | string[]>) => {
             }
           });
         }
-
-        lastIndexedObj = indexedBaseObj;
       }
     }
+
+    lastIndexedObj = indexedBaseObj;
+
     return indexedBaseObj;
   };
 
