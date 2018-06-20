@@ -106,12 +106,15 @@ export const memoizeIndexedArray = <M>(fn: IndexedMemoizableFunction<M>) => {
 
     if (lastResult) {
       let outerChanged = false;
+      const fields = Object.keys(nextResult);
 
-      const nextIndexed: IndexedState<M> = Object.keys(nextResult).reduce(
+      const nextIndexed: IndexedState<M> = fields.reduce(
         (state, field) => {
           let innerChanged = false;
 
-          let nextValueIndexedList = Object.keys(nextResult[field]).reduce(
+          const fieldKeys = Object.keys(nextResult[field]);
+
+          let nextValueIndexedList = fieldKeys.reduce(
             (acc, value) => {
               if (
                 isArrayEqual(lastResult[field][value] as Array<M>, nextResult[field][value] as Array<M>)
@@ -126,6 +129,10 @@ export const memoizeIndexedArray = <M>(fn: IndexedMemoizableFunction<M>) => {
             },
             {}
           );
+
+          if (fieldKeys.length === 0) {
+            innerChanged = true;
+          }
 
           state[field] = innerChanged
             ? nextValueIndexedList

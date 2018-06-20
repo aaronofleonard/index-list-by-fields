@@ -150,6 +150,17 @@ describe('memoizeIndexedArray', () => {
     expect(itemsIndexedBy.subjectId[3]).not.toBe(itemsIndexedByNext.subjectId[3]);
   });
 
+  test('clears out for empty array', () => {
+    const itemsIndexedBy = indexer(items);
+    const itemsIndexedByNext = indexer([]);
+
+    expect(itemsIndexedByNext).toEqual({
+      "authorId": {},
+      "publisherId": {},
+      "subjectId": {},
+    });
+  });
+
   test('it returns the same state when no changes', () => {
     const itemsIndexedBy = indexer(items);
     const itemsIndexedByNext = indexer(items);
@@ -158,4 +169,6 @@ describe('memoizeIndexedArray', () => {
     expect(itemsIndexedBy.publisherId[1]).toBe(itemsIndexedByNext.publisherId[1]);
     expect(itemsIndexedBy).toBe(itemsIndexedByNext);
   });
+
+
 });
