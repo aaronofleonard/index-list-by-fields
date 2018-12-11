@@ -53,7 +53,7 @@ export const indexListByFields = (...fields: Array<string | string[]>) => <
 >(
   list: Array<M>
 ): IndexedState<M> => {
-  // preinitialize all fields
+  // pre-initialize all fields
   let indexedBaseObj: IndexedState<M> = fields.reduce((obj: object, field) => {
     if (typeof field === 'string') {
       obj[field] = {};
