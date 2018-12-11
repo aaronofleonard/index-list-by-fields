@@ -22,10 +22,10 @@
     "url": "https://github.com/aaronofleonard/index-list-by-fields.git"
   },
   "devDependencies": {
-    "@types/jest": "^22.2.2",
-    "jest": "^22.4.3",
-    "ts-jest": "^22.4.6",
-    "typescript": "^2.8.1"
+    "@types/jest": "^23.3.10",
+    "jest": "^23.6.0",
+    "ts-jest": "^23.10.5",
+    "typescript": "^3.2.2"
   },
   "jest": {
     "globals": {
