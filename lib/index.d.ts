@@ -7,5 +7,5 @@ export interface IndexedState<M> {
 export interface IndexedMemoizableFunction<M> {
     (...args: Array<any>): IndexedState<M>;
 }
-export declare const indexListByFields: (...fields: (string | string[])[]) => <M extends object>(list: M[]) => IndexedState<M>;
+export declare const indexListByFields: (...fields: (string | string[])[]) => <M extends object>(list: M[], processor?: <P>(item: M) => P) => IndexedState<M>;
 export declare const memoizeIndexedArray: <M>(fn: IndexedMemoizableFunction<M>) => (...args: any[]) => IndexedState<M>;
