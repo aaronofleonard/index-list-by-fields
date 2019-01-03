@@ -23,7 +23,14 @@ function ensureKeyOnObject<M>(
 function indexIntoObject<M>(
   baseObject: IndexedField<M> | IndexedState<M>,
   item: M,
-  field: string | Array<string>
+  field: string | string[],
+  comparisonItem: M
+)
+function indexIntoObject<M, C>(
+  baseObject: IndexedField<M> | IndexedState<M>,
+  item: M,
+  field: string | string[],
+  comparisonItem: M | C
 ): IndexedField<M> {
   let value: any, nextFields: Array<string>, currentField: string;
 
@@ -33,7 +40,7 @@ function indexIntoObject<M>(
     currentField = field;
   }
 
-  value = item[currentField];
+  value = comparisonItem[currentField];
 
   if (value === null) {
     return;
@@ -41,7 +48,7 @@ function indexIntoObject<M>(
 
   if (Array.isArray(nextFields) && nextFields.length) {
     ensureKeyOnObject(baseObject, value, {});
-    indexIntoObject(baseObject[value] as IndexedField<M>, item, nextFields);
+    indexIntoObject(baseObject[value] as IndexedField<M>, item, nextFields, comparisonItem);
   } else {
     ensureKeyOnObject(baseObject, value, []);
     (baseObject[value] as Array<M>).push(item);
@@ -51,7 +58,8 @@ function indexIntoObject<M>(
 export const indexListByFields = (...fields: Array<string | string[]>) => <
   M extends object
 >(
-  list: Array<M>
+  list: M[],
+  processor?: <P>(item: M) => P
 ): IndexedState<M> => {
   // pre-initialize all fields
   let indexedBaseObj: IndexedState<M> = fields.reduce((obj: object, field) => {
@@ -65,13 +73,14 @@ export const indexListByFields = (...fields: Array<string | string[]>) => <
 
   for (let i = 0, len = list.length; i < len; i++) {
     let item = list[i];
+    let compareItem = typeof processor === 'undefined' ? list[i] : processor(item);
 
     for (let j = 0, subLen = fields.length; j < subLen; j++) {
       let field = fields[j];
 
       const key = Array.isArray(field) ? field.join('') : field;
 
-      indexIntoObject(indexedBaseObj[key], item, field);
+      indexIntoObject(indexedBaseObj[key], item, field, compareItem);
     }
   }
 

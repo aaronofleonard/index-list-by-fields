@@ -130,6 +130,49 @@ describe('indexListByFields', () => {
       },
     });
   });
+
+  test('compares objects using a processor', () => {
+    type MetaObject = {
+      meta: number,
+      data: any
+    };
+
+    const obj1: MetaObject = {
+      meta: 1,
+      data: WAROFTHEWORLDS
+    };
+    const obj2: MetaObject = {
+      meta: 2,
+      data: LITTLEWOMEN
+    };
+    const obj3: MetaObject = {
+      meta: 3,
+      data: LORDOFTHEFLIES
+    };
+
+    const items: MetaObject[] = [obj1, obj2, obj3];
+    const indexer = indexListByFields('authorId', 'publisherId', 'subjectId');
+
+    const itemsIndexedBy = indexer(items, item => item.data);
+
+    expect(itemsIndexedBy).toEqual({
+      authorId: {
+        1: [obj1],
+        3: [obj2],
+        7: [obj3],
+      },
+      publisherId: {
+        1: [obj1],
+        3: [obj2],
+        4: [obj3],
+      },
+      subjectId: {
+        1: [obj1],
+        2: [obj2],
+        3: [obj3],
+      }
+    })
+  });
 });
 
 describe('memoizeIndexedArray', () => {
